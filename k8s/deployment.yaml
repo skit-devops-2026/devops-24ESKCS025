@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostelfix-deployment
+  namespace: default
+  labels:
+    app: hostelfix
+    tier: frontend
+    part-of: hostel-management
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostelfix
+  template:
+    metadata:
+      labels:
+        app: hostelfix
+        tier: frontend
+    spec:
+      containers:
+        - name: hostelfix
+          image: ghcr.io/skit-devops-2026/devops-24eskcs025:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: NITRO_PORT
+              value: "8080"
+            - name: NITRO_HOST
+              value: "0.0.0.0"
+            - name: VITE_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hostelfix-secrets
+                  key: supabase-url
+                  optional: true
+            - name: VITE_SUPABASE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hostelfix-secrets
+                  key: supabase-key
+                  optional: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
