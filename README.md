@@ -11,7 +11,8 @@ attach a photo of the problem, and follow the complaint until it is resolved. Wa
 admins triage every complaint from a single dashboard, assign maintenance staff, add
 remarks and track resolution performance through charts.
 
-Live preview: https://id-preview--977442ce-b91b-4acc-a56b-dae39855ff7f.lovable.app
+Live preview: https://id-preview--977442ce-b91b-4acc-a56b-dae39855ff7f.lovable.app  
+Live deployment (Render): https://devops-24eskcs025.onrender.com
 
 ## Features
 
@@ -167,7 +168,7 @@ before merging. See `CONTRIBUTING.md` for the full workflow and commit message c
 | **M5** | Dockerfile | 2 | `Dockerfile` (Multi-stage build, Alpine, non-root `node` user, built-in healthcheck) | Verified (`npm run build` + container runtime) |
 | **M5** | Docker Compose | 2 | `docker-compose.yml` (App + Prometheus + Grafana + healthcheck + bridge network) | Verified (Configuration & structure validated) |
 | **M5** | Container Registry Image | 2 | `ghcr.io/skit-devops-2026/devops-24eskcs025:latest` & `.github/workflows/docker-publish.yml` | Configured for GHCR push |
-| **M6** | Live Application URL | 2 | Zero-config `render.yaml` Blueprint & Dockerfile ready for Render / Railway | Deployment configured & ready |
+| **M6** | Live Application URL | 2 | https://devops-24eskcs025.onrender.com | Verified (Live HTTP 200 at `/` & `/health`) |
 | **M6** | Prometheus Configuration | 2 | `monitoring/prometheus.yml` (Scrapes `/metrics` every 5s from application) | Verified (`GET /metrics` live response confirmed) |
 | **M6** | Monitoring Dashboard | 2 | `monitoring/grafana/dashboards/hostel-fix-dashboard.json` & automated provisioning | Verified (Valid Grafana v10 JSON with 8 panels) |
 | **M6** | Deployment Screenshot | 2 | `docs/deployment-screenshot.png` | Completed (Committed under docs/) |
@@ -277,9 +278,10 @@ Provisioned under `monitoring/grafana/dashboards/hostel-fix-dashboard.json`:
 - Pre-configured datasource and dashboard provider in `monitoring/grafana/provisioning/`.
 
 ### Cloud Deployment & Evidence
-The application is pre-configured for automated cloud deployment via Render (`render.yaml` Blueprint) and container platforms:
-- **Public URL**: `https://hostelfix-24eskcs025.onrender.com`
-- **Health Verification**: `curl -i https://hostelfix-24eskcs025.onrender.com/health` (Returns HTTP 200 `{"status":"ok"}`)
+The application is deployed on Render using the zero-config `render.yaml` Blueprint and multi-stage `Dockerfile`:
+- **Public URL**: https://devops-24eskcs025.onrender.com
+- **Health Verification**: `curl -i https://devops-24eskcs025.onrender.com/health` (Returns HTTP 200 `{"status":"ok"}`)
+- **Prometheus Metrics**: `curl -i https://devops-24eskcs025.onrender.com/metrics` (Returns HTTP 200 Prometheus metrics)
 - **Deployment Evidence**:
 
 ![Cloud Deployment Evidence](docs/deployment-screenshot.png)

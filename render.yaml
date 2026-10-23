@@ -12,9 +12,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: VITE_SUPABASE_URL
-        value: https://project-placeholder.supabase.co
+        value: https://devops-24eskcs025.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder_key
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldm9wcy0yNGVza2NzMDI1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2MjAwMDAwMDAsImV4cCI6MTk5OTk5OTk5OX0.dummy_signature
       - key: VITE_SUPABASE_PROJECT_ID
-        value: devops-hostelfix
+        value: devops-24eskcs025
 

@@ -19,6 +19,9 @@ COPY . .
 # Build the production server bundle
 ENV NODE_ENV=production
 ENV NITRO_PRESET=node-server
+ENV VITE_SUPABASE_URL=https://devops-24eskcs025.supabase.co
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldm9wcy0yNGVza2NzMDI1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2MjAwMDAwMDAsImV4cCI6MTk5OTk5OTk5OX0.dummy_signature
+ENV VITE_SUPABASE_PROJECT_ID=devops-24eskcs025
 RUN npm run build
 
 # ==========================================
@@ -33,6 +36,10 @@ ENV PORT=8080
 ENV HOST=0.0.0.0
 ENV NITRO_PORT=8080
 ENV NITRO_HOST=0.0.0.0
+ENV VITE_SUPABASE_URL=https://devops-24eskcs025.supabase.co
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldm9wcy0yNGVza2NzMDI1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2MjAwMDAwMDAsImV4cCI6MTk5OTk5OTk5OX0.dummy_signature
+ENV VITE_SUPABASE_PROJECT_ID=devops-24eskcs025
+
 
 # Non-root user for container security
 USER node

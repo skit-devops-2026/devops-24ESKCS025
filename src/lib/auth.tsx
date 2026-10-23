@@ -38,36 +38,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const load = async (userId: string) => {
-    const [{ data: p }, { data: roles }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id,name,email,room_number,hostel_block,phone")
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    setProfile((p as Profile) ?? null);
-    setIsAdmin(!!roles?.some((r) => r.role === "admin"));
+    try {
+      const [{ data: p }, { data: roles }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id,name,email,room_number,hostel_block,phone")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+      ]);
+      setProfile((p as Profile) ?? null);
+      setIsAdmin(!!roles?.some((r) => r.role === "admin"));
+    } catch (e) {
+      console.warn("Could not load user profile:", e);
+    }
   };
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (s?.user) {
-        setTimeout(() => void load(s.user.id), 0);
-      } else {
-        setProfile(null);
-        setIsAdmin(false);
+    let unsubscribe = () => {};
+    try {
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+        setSession(s);
+        if (s?.user) {
+          setTimeout(() => void load(s.user.id), 0);
+        } else {
+          setProfile(null);
+          setIsAdmin(false);
+        }
+      });
+      if (sub?.subscription) {
+        unsubscribe = () => sub.subscription.unsubscribe();
       }
-    });
+    } catch (err) {
+      console.warn("Auth state change subscription warning:", err);
+    }
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) await load(data.session.user.id);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        setSession(data?.session ?? null);
+        if (data?.session?.user) await load(data.session.user.id);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn("Auth getSession error:", err);
+        setLoading(false);
+      });
 
-    return () => sub.subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   return (
