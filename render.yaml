@@ -12,8 +12,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: VITE_SUPABASE_URL
-        sync: false
+        value: https://project-placeholder.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
-        sync: false
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder_key
       - key: VITE_SUPABASE_PROJECT_ID
-        sync: false
+        value: devops-hostelfix
+
