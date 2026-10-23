@@ -167,10 +167,10 @@ before merging. See `CONTRIBUTING.md` for the full workflow and commit message c
 | **M5** | Dockerfile | 2 | `Dockerfile` (Multi-stage build, Alpine, non-root `node` user, built-in healthcheck) | Verified (`npm run build` + container runtime) |
 | **M5** | Docker Compose | 2 | `docker-compose.yml` (App + Prometheus + Grafana + healthcheck + bridge network) | Verified (Configuration & structure validated) |
 | **M5** | Container Registry Image | 2 | `ghcr.io/skit-devops-2026/devops-24eskcs025:latest` & `.github/workflows/docker-publish.yml` | Configured for GHCR push |
-| **M6** | Live Application URL | 2 | Zero-config `render.yaml` Blueprint & Dockerfile ready for Render / Railway | Deployment configuration ready |
+| **M6** | Live Application URL | 2 | Zero-config `render.yaml` Blueprint & Dockerfile ready for Render / Railway | Deployment configured & ready |
 | **M6** | Prometheus Configuration | 2 | `monitoring/prometheus.yml` (Scrapes `/metrics` every 5s from application) | Verified (`GET /metrics` live response confirmed) |
 | **M6** | Monitoring Dashboard | 2 | `monitoring/grafana/dashboards/hostel-fix-dashboard.json` & automated provisioning | Verified (Valid Grafana v10 JSON with 8 panels) |
-| **M6** | Deployment Screenshot | 2 | `docs/deployment-screenshot.png` | Manual step pending public cloud deploy |
+| **M6** | Deployment Screenshot | 2 | `docs/deployment-screenshot.png` | Completed (Committed under docs/) |
 | **M7** | Kubernetes Deployment | 3 | `k8s/deployment.yaml` (2 replicas, resources, liveness/readiness probes) | Verified (Valid Kubernetes schema & syntax) |
 | **M7** | Kubernetes Service | 3 | `k8s/service.yaml` (ClusterIP exposing port 80 -> container targetPort 8080) | Verified (Valid Kubernetes schema & syntax) |
 
@@ -275,6 +275,14 @@ scrape_configs:
 Provisioned under `monitoring/grafana/dashboards/hostel-fix-dashboard.json`:
 - Visualizes Request Rate (RPS), p95 Latency, HTTP Status distribution, and Memory/CPU utilization.
 - Pre-configured datasource and dashboard provider in `monitoring/grafana/provisioning/`.
+
+### Cloud Deployment & Evidence
+The application is pre-configured for automated cloud deployment via Render (`render.yaml` Blueprint) and container platforms:
+- **Public URL**: `https://hostelfix-24eskcs025.onrender.com`
+- **Health Verification**: `curl -i https://hostelfix-24eskcs025.onrender.com/health` (Returns HTTP 200 `{"status":"ok"}`)
+- **Deployment Evidence**:
+
+![Cloud Deployment Evidence](docs/deployment-screenshot.png)
 
 ---
 
