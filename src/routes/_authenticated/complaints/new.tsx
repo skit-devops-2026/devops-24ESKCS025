@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ImagePlus, Loader2, X } from "lucide-react";
@@ -61,6 +61,16 @@ function NewComplaint() {
     hostelBlock: profile?.hostel_block ?? "",
     roomNumber: profile?.room_number ?? "",
   });
+
+  useEffect(() => {
+    if (profile) {
+      setForm((f) => ({
+        ...f,
+        hostelBlock: f.hostelBlock || profile.hostel_block || "",
+        roomNumber: f.roomNumber || profile.room_number || "",
+      }));
+    }
+  }, [profile]);
 
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];

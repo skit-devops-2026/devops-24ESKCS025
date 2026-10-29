@@ -81,16 +81,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "HostelFix — Hostel Complaint Management System" },
+      {
+        name: "description",
+        content:
+          "Report, track and resolve hostel maintenance complaints with real-time updates and analytics.",
+      },
+      { name: "author", content: "HostelFix" },
+      { property: "og:title", content: "HostelFix — Hostel Complaint Management System" },
+      {
+        property: "og:description",
+        content:
+          "Modern hostel complaint desk for students and wardens — fast, paperless issue resolution.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@400;600;700;800&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,

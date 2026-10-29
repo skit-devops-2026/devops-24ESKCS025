@@ -171,6 +171,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/records" className="hover:text-foreground">
+                Maintenance Records
+              </Link>
+            </li>
+            <li>
               <Link to="/profile" className="inline-flex items-center gap-2 hover:text-foreground">
                 <User2 className="size-3.5" /> Profile
               </Link>

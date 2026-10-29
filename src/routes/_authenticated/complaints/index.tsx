@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/complaints/")({
 const PAGE_SIZE = 8;
 
 function ComplaintsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
@@ -49,12 +49,18 @@ function ComplaintsPage() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["complaints", "all"],
+    queryKey: ["complaints", isAdmin ? "all" : user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("complaints")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (!isAdmin && user?.id) {
+        query = query.eq("student_id", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Complaint[];
     },

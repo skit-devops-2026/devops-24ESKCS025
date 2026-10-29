@@ -51,15 +51,21 @@ const COLORS = [
 ];
 
 function Dashboard() {
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin, profile, user } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["complaints", "all"],
+    queryKey: ["complaints", isAdmin ? "all" : user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("complaints")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (!isAdmin && user?.id) {
+        query = query.eq("student_id", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Complaint[];
     },

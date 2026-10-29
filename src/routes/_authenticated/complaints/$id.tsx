@@ -137,6 +137,7 @@ function ComplaintDetail() {
   };
 
   const remove = async () => {
+    if (!confirm("Are you sure you want to delete this complaint? This cannot be undone.")) return;
     const { error } = await supabase.from("complaints").delete().eq("id", id);
     if (error) {
       toast.error(error.message);

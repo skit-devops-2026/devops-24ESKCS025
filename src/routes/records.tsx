@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { mernApi, type MernRecord } from "@/lib/mern-api";
 import { CATEGORIES, HOSTEL_BLOCKS } from "@/lib/complaints";
+import { useAuth } from "@/lib/auth";
 import { PageShell, PageHeading, Loader, EmptyState, StatusBadge } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/records")({
 });
 
 function MernRecordsPage() {
+  const { profile } = useAuth();
   const [records, setRecords] = useState<MernRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -59,28 +61,46 @@ function MernRecordsPage() {
     title: "",
     description: "",
     category: "electrical",
-    hostelBlock: "Block A",
-    roomNumber: "101",
-    studentName: "Resident Student",
+    hostelBlock: profile?.hostel_block || "Block A",
+    roomNumber: profile?.room_number || "101",
+    studentName: profile?.name || "Resident Student",
     priority: "medium",
   });
+
+  useEffect(() => {
+    if (profile) {
+      setForm((f) => ({
+        ...f,
+        hostelBlock: profile.hostel_block || f.hostelBlock,
+        roomNumber: profile.room_number || f.roomNumber,
+        studentName: profile.name || f.studentName,
+      }));
+    }
+  }, [profile]);
 
   const checkHealth = async () => {
     const health = await mernApi.checkHealth();
     setServerHealth(health);
+    return health;
   };
 
-  const fetchRecords = async () => {
+  const fetchRecords = async (manual = false) => {
     setLoading(true);
     try {
-      await checkHealth();
+      const health = await checkHealth();
+      if (!health.online) {
+        setRecords([]);
+        if (manual) toast.info("Backend server is currently offline on port 5000");
+        return;
+      }
       const data = await mernApi.getRecords({
         category: filterCategory,
         status: filterStatus,
       });
       setRecords(data);
+      if (manual) toast.success("Records refreshed");
     } catch (err: any) {
-      toast.error(err.message || "Failed to connect to MERN backend");
+      if (manual) toast.error(err.message || "Failed to connect to backend");
     } finally {
       setLoading(false);
     }
@@ -148,7 +168,7 @@ function MernRecordsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchRecords}
+            onClick={() => fetchRecords(true)}
             disabled={loading}
             className="gap-2"
           >
@@ -371,7 +391,7 @@ function MernRecordsPage() {
               disabled={submitting || !serverHealth.online}
             >
               <Plus className="size-4" />
-              {submitting ? "Saving to MongoDB..." : "Save Record (POST /api/records)"}
+              {submitting ? "Saving record..." : "Save Record"}
             </Button>
           </form>
         </div>

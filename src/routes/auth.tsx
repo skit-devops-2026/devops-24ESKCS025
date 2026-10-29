@@ -259,6 +259,69 @@ function AuthPage() {
           </Button>
         </form>
 
+        {mode === "login" && (
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-primary">Demo Quick Login</span>
+              <span className="text-[11px] text-muted-foreground">Click to fill & sign in</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-medium bg-background/80 hover:bg-background"
+                disabled={loading}
+                onClick={async () => {
+                  setForm((f) => ({ ...f, email: "admin@campus.edu", password: "admin123" }));
+                  setLoading(true);
+                  try {
+                    const { error } = await supabase.auth.signInWithPassword({
+                      email: "admin@campus.edu",
+                      password: "admin123",
+                    });
+                    if (error) throw error;
+                    toast.success("Signed in as Warden (Admin)");
+                    navigate({ to: "/dashboard", replace: true });
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to sign in");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                👑 Chief Warden
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-medium bg-background/80 hover:bg-background"
+                disabled={loading}
+                onClick={async () => {
+                  setForm((f) => ({ ...f, email: "student@campus.edu", password: "student123" }));
+                  setLoading(true);
+                  try {
+                    const { error } = await supabase.auth.signInWithPassword({
+                      email: "student@campus.edu",
+                      password: "student123",
+                    });
+                    if (error) throw error;
+                    toast.success("Signed in as Aarav (Student)");
+                    navigate({ to: "/dashboard", replace: true });
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to sign in");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                🎓 Student
+              </Button>
+            </div>
+          </div>
+        )}
+
         <p className="mt-5 text-center text-xs text-muted-foreground">
           Protected by secure token-based authentication and role-based access.
         </p>
