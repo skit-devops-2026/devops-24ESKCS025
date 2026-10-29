@@ -9,6 +9,16 @@ import {
   httpRequestsTotal,
 } from "./lib/metrics";
 
+import {
+  registerUser,
+  loginUser,
+  getUserByToken,
+  logoutUser,
+  executeQuery,
+  saveUploadedFile,
+  getUploadedFile,
+} from "./lib/server-db";
+
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
@@ -71,12 +81,114 @@ function normalizeRoute(pathname: string): string {
   return pathname;
 }
 
+async function handleLocalApiRequest(request: Request, pathname: string): Promise<Response> {
+  const jsonHeaders = {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-cache, no-store, must-revalidate",
+  };
+
+  try {
+    if (pathname === "/api/local/auth/signup" && request.method === "POST") {
+      const body = await request.json();
+      const result = registerUser({
+        email: body.email,
+        password: body.password,
+        name: body.options?.data?.name,
+        room_number: body.options?.data?.room_number,
+        hostel_block: body.options?.data?.hostel_block,
+        phone: body.options?.data?.phone,
+      });
+      return new Response(JSON.stringify({ data: result, error: null }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    if (pathname === "/api/local/auth/signin" && request.method === "POST") {
+      const body = await request.json();
+      const result = loginUser(body.email, body.password);
+      return new Response(JSON.stringify({ data: result, error: null }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    if (pathname === "/api/local/auth/signout" && request.method === "POST") {
+      const authHeader = request.headers.get("authorization") || "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      if (token) logoutUser(token);
+      return new Response(JSON.stringify({ error: null }), { status: 200, headers: jsonHeaders });
+    }
+
+    if (pathname === "/api/local/auth/session" && request.method === "GET") {
+      const authHeader = request.headers.get("authorization") || "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      const result = token ? getUserByToken(token) : null;
+      return new Response(
+        JSON.stringify({
+          data: { session: result?.session ?? null, user: result?.user ?? null },
+          error: null,
+        }),
+        { status: 200, headers: jsonHeaders },
+      );
+    }
+
+    if (pathname === "/api/local/query" && request.method === "POST") {
+      const body = await request.json();
+      const result = executeQuery(body);
+      return new Response(JSON.stringify(result), { status: 200, headers: jsonHeaders });
+    }
+
+    if (pathname === "/api/local/storage/upload" && request.method === "POST") {
+      const body = await request.json();
+      const result = saveUploadedFile(body.path, body.base64);
+      return new Response(JSON.stringify({ data: result, error: null }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    if (pathname.startsWith("/api/local/storage/file/")) {
+      const pathName = decodeURIComponent(pathname.replace("/api/local/storage/file/", ""));
+      const fileData = getUploadedFile(pathName);
+      if (!fileData) {
+        return new Response(JSON.stringify({ error: { message: "File not found" } }), {
+          status: 404,
+          headers: jsonHeaders,
+        });
+      }
+      return new Response(JSON.stringify({ data: { signedUrl: fileData }, error: null }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    return new Response(JSON.stringify({ error: { message: "Endpoint not found" } }), {
+      status: 404,
+      headers: jsonHeaders,
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ data: null, error: { message: err?.message || "Internal server error" } }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const startTime = performance.now();
     const url = new URL(request.url);
     const method = request.method;
     const pathname = url.pathname;
+
+    // Handle /api/local endpoints directly for self-contained persistent database
+    if (pathname.startsWith("/api/local/")) {
+      return handleLocalApiRequest(request, pathname);
+    }
 
     // Handle /health endpoint directly
     if (pathname === "/health" || pathname === "/health/") {

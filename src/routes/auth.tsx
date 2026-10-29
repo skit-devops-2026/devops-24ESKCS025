@@ -96,7 +96,7 @@ function AuthPage() {
           toast.success("Welcome to HostelFix!");
           navigate({ to: "/dashboard", replace: true });
         } else {
-          toast.success("Account created — check your email to confirm your address.");
+          toast.success("Account created successfully. You can now sign in.");
           setMode("login");
         }
       } else {
@@ -105,7 +105,7 @@ function AuthPage() {
           password: form.password,
         });
         if (error) throw error;
-        toast.success("Signed in");
+        toast.success("Signed in successfully");
         navigate({ to: "/dashboard", replace: true });
       }
     } catch (err) {

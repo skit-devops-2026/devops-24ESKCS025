@@ -20,9 +20,10 @@ export function Navbar() {
         { to: "/dashboard", label: "Dashboard" },
         { to: "/complaints", label: isAdmin ? "All Complaints" : "My Complaints" },
         ...(isAdmin ? [{ to: "/students", label: "Students" }] : []),
+        { to: "/records", label: "Maintenance Records" },
         { to: "/profile", label: "Profile" },
       ]
-    : [];
+    : [{ to: "/records", label: "Maintenance Records" }];
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -157,7 +158,10 @@ export function Footer() {
           <h3 className="text-sm font-semibold">Product</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
-              <Link to="/dashboard" className="inline-flex items-center gap-2 hover:text-foreground">
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 hover:text-foreground"
+              >
                 <LayoutDashboard className="size-3.5" /> Dashboard
               </Link>
             </li>

@@ -17,6 +17,9 @@ dist-ssr
 *.tsbuildinfo
 *.local
 
+# Local database storage
+data/
+
 # Local environment files — never commit credentials or deployment configuration.
 .env
 .env.*
