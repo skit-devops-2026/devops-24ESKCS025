@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { connectDB, isDbConnected } from "./config/db.js";
 import recordRoutes from "./routes/recordRoutes.js";
+import assetRoutes from "./routes/assetRoutes.js";
 
 // Determine directory name in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +49,8 @@ app.get("/", (req, res) => {
     mongodbConnected: isDbConnected(),
     endpoints: {
       records: "/api/records",
+      assets: "/api/assets",
+      assetsSummary: "/api/assets/summary",
       health: "/api/health",
     },
   });
@@ -65,6 +68,7 @@ app.get("/api/health", (req, res) => {
 
 // API Routes
 app.use("/api/records", recordRoutes);
+app.use("/api/assets", assetRoutes);
 
 // 404 Route Handler for undefined endpoints
 app.use((req, res) => {
@@ -92,7 +96,8 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 HostelFix MERN Backend Server running on port ${PORT}`);
   console.log(`📍 Local API URL: http://localhost:${PORT}`);
   console.log(`📍 Records Endpoint: http://localhost:${PORT}/api/records`);
-  console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`📍 Assets Endpoint:  http://localhost:${PORT}/api/assets`);
+  console.log(`📍 Health Check:     http://localhost:${PORT}/api/health`);
   console.log(`======================================================\n`);
 });
 

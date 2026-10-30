@@ -21,9 +21,13 @@ export function Navbar() {
         { to: "/complaints", label: isAdmin ? "All Complaints" : "My Complaints" },
         ...(isAdmin ? [{ to: "/students", label: "Students" }] : []),
         { to: "/records", label: "Maintenance Records" },
+        { to: "/inventory", label: "Asset Inventory" },
         { to: "/profile", label: "Profile" },
       ]
-    : [{ to: "/records", label: "Maintenance Records" }];
+    : [
+        { to: "/records", label: "Maintenance Records" },
+        { to: "/inventory", label: "Asset Inventory" },
+      ];
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -173,6 +177,11 @@ export function Footer() {
             <li>
               <Link to="/records" className="hover:text-foreground">
                 Maintenance Records
+              </Link>
+            </li>
+            <li>
+              <Link to="/inventory" className="hover:text-foreground">
+                Asset Inventory
               </Link>
             </li>
             <li>
