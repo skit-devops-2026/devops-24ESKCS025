@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -23,6 +23,9 @@ import {
   Truck,
   CheckCircle2,
   X,
+  Lock,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import {
   inventoryApi,
@@ -31,6 +34,7 @@ import {
   type CreateAssetInput,
 } from "@/lib/inventory-api";
 import { CATEGORIES, CATEGORY_MAP, HOSTEL_BLOCKS } from "@/lib/complaints";
+import { useAuth } from "@/lib/auth";
 import { PageShell, PageHeading, Loader, EmptyState } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +85,7 @@ const CONDITION_LABELS: Record<string, string> = {
 };
 
 function InventoryPage() {
+  const { user, profile, isAdmin } = useAuth();
   const [assets, setAssets] = useState<HostelAsset[]>([]);
   const [summary, setSummary] = useState<AssetSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +165,14 @@ function InventoryPage() {
 
   const handleCreateAsset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in as Head Warden to add inventory assets");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can add inventory assets");
+      return;
+    }
     if (!formData.name.trim()) {
       toast.error("Please enter an asset name");
       return;
@@ -193,6 +206,14 @@ function InventoryPage() {
 
   const handleUpdateAsset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in as Head Warden to update inventory");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can update inventory assets");
+      return;
+    }
     if (!editingAsset) return;
 
     setActionLoading(true);
@@ -209,6 +230,15 @@ function InventoryPage() {
   };
 
   const handleQuickStock = async (asset: HostelAsset, change: number) => {
+    if (!user) {
+      toast.error("Please sign in as Head Warden to adjust stock");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can modify stock levels");
+      return;
+    }
+
     try {
       const updated = await inventoryApi.adjustStock(
         asset._id,
@@ -227,6 +257,15 @@ function InventoryPage() {
   };
 
   const handleDeleteAsset = async (asset: HostelAsset) => {
+    if (!user) {
+      toast.error("Please sign in as Head Warden to delete inventory assets");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can delete inventory assets");
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete asset "${asset.name}" from MongoDB?`)) {
       return;
     }
@@ -275,33 +314,97 @@ function InventoryPage() {
               <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingAsset(null);
-                setFormData({
-                  name: "",
-                  category: "electrical",
-                  hostelBlock: "Central Store",
-                  location: "Main Store Room",
-                  quantity: 10,
-                  minThreshold: 5,
-                  unit: "units",
-                  condition: "good",
-                  unitCost: 150,
-                  supplier: "Campus Procurement",
-                  notes: "",
-                });
-                setCreateDialogOpen(true);
-              }}
-              className="gap-2"
-            >
-              <Plus className="size-4" />
-              Add Asset
-            </Button>
+            {user && isAdmin ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingAsset(null);
+                  setFormData({
+                    name: "",
+                    category: "electrical",
+                    hostelBlock: "Central Store",
+                    location: "Main Store Room",
+                    quantity: 10,
+                    minThreshold: 5,
+                    unit: "units",
+                    condition: "good",
+                    unitCost: 150,
+                    supplier: "Campus Procurement",
+                    notes: "",
+                  });
+                  setCreateDialogOpen(true);
+                }}
+                className="gap-2"
+              >
+                <Plus className="size-4" />
+                Add Asset
+              </Button>
+            ) : !user ? (
+              <Button asChild size="sm" className="gap-2">
+                <Link to="/auth">
+                  <Lock className="size-4" /> Sign In
+                </Link>
+              </Button>
+            ) : null}
           </div>
         }
       />
+
+      {/* Role Access Level Notice */}
+      {!user ? (
+        <div className="mb-6 rounded-2xl border border-border/80 bg-secondary/50 p-3.5 text-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-7 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Lock className="size-4" />
+            </span>
+            <div>
+              <p className="font-semibold text-foreground">Guest Read-Only Inventory Directory</p>
+              <p className="text-muted-foreground text-[11px]">
+                You can browse available spares and equipment. Only the Head Warden can register new
+                assets or modify stock levels.
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline" className="h-8 text-xs gap-1.5">
+            <Link to="/auth">
+              <ShieldCheck className="size-3.5" /> Sign In as Head Warden
+            </Link>
+          </Button>
+        </div>
+      ) : !isAdmin ? (
+        <div className="mb-6 rounded-2xl border border-info/30 bg-info/10 p-3.5 text-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-7 place-items-center rounded-lg bg-info/15 text-info">
+              <ShieldAlert className="size-4" />
+            </span>
+            <div>
+              <p className="font-semibold text-info">Resident Student Portal (Read-Only Inventory)</p>
+              <p className="text-muted-foreground text-[11px]">
+                Logged in as <strong>{profile?.name || user.email}</strong>. Asset inventory and
+                spare parts are managed exclusively by the Head Warden.
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline" className="h-8 text-xs gap-1.5">
+            <Link to="/complaints/new">
+              <Plus className="size-3.5" /> Report Broken Fixture
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" />
+            <span className="font-semibold text-primary">Head Warden Console</span>
+            <span className="text-muted-foreground">
+              • Full authorization to add new assets, issue parts, restock, and edit items
+            </span>
+          </div>
+          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+            👑 HEAD WARDEN
+          </span>
+        </div>
+      )}
 
       {/* Backend & MongoDB Status Indicators */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -564,7 +667,7 @@ function InventoryPage() {
               : "Start the backend server with 'npm run server' to load MongoDB inventory records."
           }
           action={
-            serverHealth.online && (
+            serverHealth.online && user && isAdmin ? (
               <Button
                 onClick={() => {
                   setEditingAsset(null);
@@ -574,7 +677,7 @@ function InventoryPage() {
               >
                 <Plus className="size-4" /> Add First Asset
               </Button>
-            )
+            ) : null
           }
         />
       ) : (
@@ -684,53 +787,65 @@ function InventoryPage() {
                   )}
                 </div>
 
-                {/* Bottom Quick Actions */}
-                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      title="Issue 1 unit for repair"
-                      disabled={asset.quantity <= 0}
-                      onClick={() => handleQuickStock(asset, -1)}
-                      className="h-7 px-2 text-xs gap-1 hover:text-destructive"
-                    >
-                      <MinusCircle className="size-3.5" />
-                      Issue 1
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      title="Restock 1 unit"
-                      onClick={() => handleQuickStock(asset, 1)}
-                      className="h-7 px-2 text-xs gap-1 hover:text-success"
-                    >
-                      <PlusCircle className="size-3.5" />
-                      Restock 1
-                    </Button>
-                  </div>
+                {/* Bottom Actions: Head Warden only vs Read-only status for students/guests */}
+                {user && isAdmin ? (
+                  <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Issue 1 unit for repair"
+                        disabled={asset.quantity <= 0}
+                        onClick={() => handleQuickStock(asset, -1)}
+                        className="h-7 px-2 text-xs gap-1 hover:text-destructive"
+                      >
+                        <MinusCircle className="size-3.5" />
+                        Issue 1
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Restock 1 unit"
+                        onClick={() => handleQuickStock(asset, 1)}
+                        className="h-7 px-2 text-xs gap-1 hover:text-success"
+                      >
+                        <PlusCircle className="size-3.5" />
+                        Restock 1
+                      </Button>
+                    </div>
 
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Edit asset details"
-                      onClick={() => openEditModal(asset)}
-                      className="size-7"
-                    >
-                      <Edit3 className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Delete asset from MongoDB"
-                      onClick={() => handleDeleteAsset(asset)}
-                      className="size-7 text-destructive hover:bg-destructive/15"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Edit asset details"
+                        onClick={() => openEditModal(asset)}
+                        className="size-7"
+                      >
+                        <Edit3 className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete asset from MongoDB"
+                        onClick={() => handleDeleteAsset(asset)}
+                        className="size-7 text-destructive hover:bg-destructive/15"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="size-3.5 text-primary" />
+                      Authorized for Head Warden dispatch
+                    </span>
+                    <span className="font-mono text-[10px] opacity-70">
+                      {asset.hostelBlock}
+                    </span>
+                  </div>
+                )}
               </motion.div>
             );
           })}

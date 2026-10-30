@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import {
   Building2,
   Server,
   Filter,
+  Lock,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { mernApi, type MernRecord } from "@/lib/mern-api";
 import { CATEGORIES, HOSTEL_BLOCKS } from "@/lib/complaints";
@@ -45,7 +48,7 @@ export const Route = createFileRoute("/records")({
 });
 
 function MernRecordsPage() {
-  const { profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [records, setRecords] = useState<MernRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -112,6 +115,14 @@ function MernRecordsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in as Head Warden to add maintenance records");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can create maintenance records");
+      return;
+    }
     if (!form.title.trim() || !form.description.trim()) {
       toast.error("Please enter both title and description");
       return;
@@ -126,9 +137,9 @@ function MernRecordsPage() {
         title: "",
         description: "",
         category: "electrical",
-        hostelBlock: "Block A",
-        roomNumber: "101",
-        studentName: "Resident Student",
+        hostelBlock: profile?.hostel_block || "Block A",
+        roomNumber: profile?.room_number || "101",
+        studentName: profile?.name || "Resident Student",
         priority: "medium",
       });
     } catch (err: any) {
@@ -139,6 +150,15 @@ function MernRecordsPage() {
   };
 
   const handleStatusChange = async (id: string, newStatus: MernRecord["status"]) => {
+    if (!user) {
+      toast.error("Please sign in to update maintenance status");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can change maintenance record status");
+      return;
+    }
+
     try {
       const updated = await mernApi.updateRecord(id, { status: newStatus });
       toast.success(`Status updated to ${newStatus}`);
@@ -149,6 +169,15 @@ function MernRecordsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) {
+      toast.error("Please sign in to delete maintenance records");
+      return;
+    }
+    if (!isAdmin) {
+      toast.error("Access denied: Only the Head Warden can delete maintenance records");
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this maintenance record?")) return;
     try {
       await mernApi.deleteRecord(id);
@@ -252,149 +281,189 @@ function MernRecordsPage() {
 
       {/* Main Grid: Create Record Form & Records List */}
       <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
-        {/* Form: Create Record in MongoDB */}
-        <div className="glass h-fit rounded-3xl p-6 sm:p-7">
-          <div className="mb-5 flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Plus className="size-4" />
+        {/* Left Column: Create Record (Head Warden Only) or Access Notice */}
+        {!user ? (
+          <div className="glass h-fit rounded-3xl p-6 sm:p-7 text-center">
+            <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary mb-4">
+              <Lock className="size-6" />
             </span>
-            <h2 className="font-display text-lg font-bold">Add Maintenance Record</h2>
+            <h2 className="font-display text-lg font-bold">Head Warden Login Required</h2>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              Maintenance records and repair work orders are logged and authorized exclusively by
+              the Head Warden. Please sign in to create or modify entries.
+            </p>
+            <Button asChild className="w-full mt-5 gap-2">
+              <Link to="/auth">
+                <ShieldCheck className="size-4" /> Sign In as Head Warden
+              </Link>
+            </Button>
           </div>
-
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-xs">
-                Title *
-              </Label>
-              <Input
-                id="title"
-                required
-                placeholder="e.g. Water purifier filter replaced"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                maxLength={120}
-              />
+        ) : !isAdmin ? (
+          <div className="glass h-fit rounded-3xl p-6 sm:p-7 text-center">
+            <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-info/10 text-info mb-4">
+              <ShieldAlert className="size-6" />
+            </span>
+            <h2 className="font-display text-lg font-bold">Resident Student View</h2>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              Logged in as <strong>{profile?.name || user.email}</strong>. Maintenance logs and
+              work orders are managed exclusively by the Head Warden. You have read-only
+              transparency to view hostel repair progress.
+            </p>
+            <Button asChild variant="outline" className="w-full mt-5 gap-2">
+              <Link to="/complaints/new">
+                <Plus className="size-4" /> Submit a Room Complaint
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="glass h-fit rounded-3xl p-6 sm:p-7">
+            <div className="mb-5 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+                  <Plus className="size-4" />
+                </span>
+                <h2 className="font-display text-lg font-bold">Add Maintenance Record</h2>
+              </div>
+              <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
+                👑 Head Warden
+              </span>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-xs">
-                Description *
-              </Label>
-              <Textarea
-                id="description"
-                required
-                rows={3}
-                placeholder="Detailed notes on maintenance performed..."
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                maxLength={1500}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs">Category</Label>
-                <Select
-                  value={form.category}
-                  onValueChange={(v) => setForm({ ...form, category: v })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value} className="text-xs">
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Priority</Label>
-                <Select
-                  value={form.priority}
-                  onValueChange={(v) => setForm({ ...form, priority: v })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low" className="text-xs">
-                      Low
-                    </SelectItem>
-                    <SelectItem value="medium" className="text-xs">
-                      Medium
-                    </SelectItem>
-                    <SelectItem value="high" className="text-xs">
-                      High
-                    </SelectItem>
-                    <SelectItem value="urgent" className="text-xs">
-                      Urgent
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Block</Label>
-                <Select
-                  value={form.hostelBlock}
-                  onValueChange={(v) => setForm({ ...form, hostelBlock: v })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Block" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HOSTEL_BLOCKS.map((b) => (
-                      <SelectItem key={b} value={b} className="text-xs">
-                        {b}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="room" className="text-xs">
-                  Room
+                <Label htmlFor="title" className="text-xs">
+                  Title *
                 </Label>
                 <Input
-                  id="room"
-                  className="h-9 text-xs"
-                  placeholder="e.g. B-204"
-                  value={form.roomNumber}
-                  onChange={(e) => setForm({ ...form, roomNumber: e.target.value })}
+                  id="title"
+                  required
+                  placeholder="e.g. Water purifier filter replaced"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  maxLength={120}
                 />
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="student" className="text-xs">
-                Reported By / Student
-              </Label>
-              <Input
-                id="student"
-                className="h-9 text-xs"
-                placeholder="Student Name"
-                value={form.studentName}
-                onChange={(e) => setForm({ ...form, studentName: e.target.value })}
-              />
-            </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-xs">
+                  Description *
+                </Label>
+                <Textarea
+                  id="description"
+                  required
+                  rows={3}
+                  placeholder="Detailed notes on maintenance performed..."
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  maxLength={1500}
+                />
+              </div>
 
-            <Button
-              type="submit"
-              className="w-full gap-2 mt-2"
-              disabled={submitting || !serverHealth.online}
-            >
-              <Plus className="size-4" />
-              {submitting ? "Saving record..." : "Save Record"}
-            </Button>
-          </form>
-        </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Category</Label>
+                  <Select
+                    value={form.category}
+                    onValueChange={(v) => setForm({ ...form, category: v })}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value} className="text-xs">
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Priority</Label>
+                  <Select
+                    value={form.priority}
+                    onValueChange={(v) => setForm({ ...form, priority: v })}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low" className="text-xs">
+                        Low
+                      </SelectItem>
+                      <SelectItem value="medium" className="text-xs">
+                        Medium
+                      </SelectItem>
+                      <SelectItem value="high" className="text-xs">
+                        High
+                      </SelectItem>
+                      <SelectItem value="urgent" className="text-xs">
+                        Urgent
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Block</Label>
+                  <Select
+                    value={form.hostelBlock}
+                    onValueChange={(v) => setForm({ ...form, hostelBlock: v })}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Block" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HOSTEL_BLOCKS.map((b) => (
+                        <SelectItem key={b} value={b} className="text-xs">
+                          {b}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="room" className="text-xs">
+                    Room
+                  </Label>
+                  <Input
+                    id="room"
+                    className="h-9 text-xs"
+                    placeholder="e.g. B-204"
+                    value={form.roomNumber}
+                    onChange={(e) => setForm({ ...form, roomNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="student" className="text-xs">
+                  Reported By / Student
+                </Label>
+                <Input
+                  id="student"
+                  className="h-9 text-xs"
+                  placeholder="Student Name"
+                  value={form.studentName}
+                  onChange={(e) => setForm({ ...form, studentName: e.target.value })}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gap-2 mt-2"
+                disabled={submitting || !serverHealth.online}
+              >
+                <Plus className="size-4" />
+                {submitting ? "Saving record..." : "Save Record"}
+              </Button>
+            </form>
+          </div>
+        )}
 
         {/* Records Display Section */}
         <div className="space-y-4">
@@ -482,15 +551,17 @@ function MernRecordsPage() {
                       </p>
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDelete(record._id)}
-                      title="Delete record from MongoDB"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {user && isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(record._id)}
+                        title="Delete record from MongoDB"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center justify-between border-t border-border/40 pt-3 text-xs text-muted-foreground">
@@ -509,22 +580,29 @@ function MernRecordsPage() {
                       </span>
                     </div>
 
-                    {/* Quick status update control */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px]">Update Status:</span>
-                      <select
-                        value={record.status}
-                        onChange={(e) =>
-                          handleStatusChange(record._id, e.target.value as MernRecord["status"])
-                        }
-                        className="rounded border border-border bg-background px-2 py-1 text-[11px] text-foreground focus:outline-none"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
+                    {/* Status update control: Head Warden only */}
+                    {user && isAdmin ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-foreground">Update Status:</span>
+                        <select
+                          value={record.status}
+                          onChange={(e) =>
+                            handleStatusChange(record._id, e.target.value as MernRecord["status"])
+                          }
+                          className="rounded border border-border bg-background px-2 py-1 text-[11px] text-foreground focus:outline-none"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">Status:</span>
+                        <StatusBadge status={record.status} />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}

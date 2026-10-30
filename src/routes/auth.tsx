@@ -1,7 +1,17 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Building2, Mail, Lock, User2, Phone, DoorClosed, Loader2 } from "lucide-react";
+import {
+  Building2,
+  Mail,
+  Lock,
+  User2,
+  Phone,
+  DoorClosed,
+  Loader2,
+  ShieldCheck,
+  GraduationCap,
+} from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,16 +30,16 @@ import { HOSTEL_BLOCKS } from "@/lib/complaints";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — HostelFix Complaint Desk" },
+      { title: "Sign in — HostelFix Complaint & Maintenance Desk" },
       {
         name: "description",
         content:
-          "Sign in or create your HostelFix account to raise and track hostel maintenance complaints.",
+          "Sign in as Head Warden or Resident Student to manage complaints, maintenance records, and asset inventory.",
       },
-      { property: "og:title", content: "Sign in — HostelFix Complaint Desk" },
+      { property: "og:title", content: "Sign in — HostelFix" },
       {
         property: "og:description",
-        content: "Secure student and admin access to the hostel complaint management system.",
+        content: "Role-based access for Head Wardens and Resident Students.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -42,6 +52,7 @@ const signUpSchema = z.object({
   name: z.string().trim().min(2, "Enter your full name").max(80),
   email: z.string().trim().email("Enter a valid email").max(255),
   password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  role: z.enum(["admin", "student"]),
   roomNumber: z.string().trim().max(20).optional(),
   hostelBlock: z.string().trim().max(40).optional(),
   phone: z.string().trim().max(20).optional(),
@@ -50,13 +61,14 @@ const signUpSchema = z.object({
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [targetRole, setTargetRole] = useState<"admin" | "student">("admin");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     roomNumber: "",
-    hostelBlock: "",
+    hostelBlock: "Block A",
     phone: "",
   });
 
@@ -73,7 +85,7 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const parsed = signUpSchema.safeParse(form);
+        const parsed = signUpSchema.safeParse({ ...form, role: targetRole });
         if (!parsed.success) {
           toast.error(parsed.error.issues[0]?.message ?? "Please check the form");
           return;
@@ -85,7 +97,8 @@ function AuthPage() {
             emailRedirectTo: window.location.origin,
             data: {
               name: form.name.trim(),
-              room_number: form.roomNumber.trim(),
+              role: targetRole,
+              room_number: targetRole === "student" ? form.roomNumber.trim() : "Warden Office",
               hostel_block: form.hostelBlock,
               phone: form.phone.trim(),
             },
@@ -93,7 +106,11 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) {
-          toast.success("Welcome to HostelFix!");
+          toast.success(
+            targetRole === "admin"
+              ? "Welcome, Head Warden!"
+              : "Welcome to HostelFix, Resident Student!",
+          );
           navigate({ to: "/dashboard", replace: true });
         } else {
           toast.success("Account created successfully. You can now sign in.");
@@ -105,7 +122,9 @@ function AuthPage() {
           password: form.password,
         });
         if (error) throw error;
-        toast.success("Signed in successfully");
+        toast.success(
+          targetRole === "admin" ? "Signed in as Head Warden" : "Signed in as Resident Student",
+        );
         navigate({ to: "/dashboard", replace: true });
       }
     } catch (err) {
@@ -131,6 +150,7 @@ function AuthPage() {
           </span>
         </Link>
 
+        {/* Tab 1: Sign in vs Register */}
         <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-secondary/70 p-1">
           {(["login", "signup"] as const).map((m) => (
             <button
@@ -153,10 +173,61 @@ function AuthPage() {
           ))}
         </div>
 
+        {/* Role Portal Selector: Head Warden vs Resident Student */}
+        <div className="mb-6 space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            {mode === "login" ? "Sign in as" : "Account Role"}
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setTargetRole("admin");
+                if (mode === "login" && !form.email) {
+                  setForm((f) => ({ ...f, email: "admin@campus.edu" }));
+                }
+              }}
+              className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all ${
+                targetRole === "admin"
+                  ? "border-primary bg-primary/10 text-primary shadow-sm"
+                  : "border-border/60 bg-secondary/40 text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              <ShieldCheck className="size-4 shrink-0" />
+              <span>Head Warden</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTargetRole("student");
+                if (mode === "login" && (!form.email || form.email === "admin@campus.edu")) {
+                  setForm((f) => ({ ...f, email: "student@campus.edu" }));
+                }
+              }}
+              className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-all ${
+                targetRole === "student"
+                  ? "border-primary bg-primary/10 text-primary shadow-sm"
+                  : "border-border/60 bg-secondary/40 text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              <GraduationCap className="size-4 shrink-0" />
+              <span>Student</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {targetRole === "admin"
+              ? "👑 Full administrator authority to create/edit maintenance records and asset inventory."
+              : "🎓 Resident student portal to submit and track maintenance complaints."}
+          </p>
+        </div>
+
         <form onSubmit={submit} className="space-y-4">
           {mode === "signup" && (
             <div className="space-y-2">
-              <Label htmlFor="name">Full name</Label>
+              <Label htmlFor="name">
+                {targetRole === "admin" ? "Warden Name" : "Student Full Name"}
+              </Label>
               <div className="relative">
                 <User2 className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -164,15 +235,18 @@ function AuthPage() {
                   className="pl-9"
                   value={form.name}
                   onChange={(e) => set("name")(e.target.value)}
-                  placeholder="Aarav Sharma"
+                  placeholder={targetRole === "admin" ? "Dr. K. S. Rathore (Head Warden)" : "Aarav Sharma"}
                   maxLength={80}
+                  required
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">
+              {targetRole === "admin" ? "Head Warden Email" : "Student Email"}
+            </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -182,7 +256,7 @@ function AuthPage() {
                 className="pl-9"
                 value={form.email}
                 onChange={(e) => set("email")(e.target.value)}
-                placeholder="you@campus.edu"
+                placeholder={targetRole === "admin" ? "admin@campus.edu" : "student@campus.edu"}
                 maxLength={255}
               />
             </div>
@@ -208,7 +282,7 @@ function AuthPage() {
           {mode === "signup" && (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Hostel block</Label>
+                <Label>{targetRole === "admin" ? "Assigned Hostel Block" : "Hostel Block"}</Label>
                 <Select value={form.hostelBlock} onValueChange={set("hostelBlock")}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select block" />
@@ -222,8 +296,11 @@ function AuthPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="room">Room</Label>
+                <Label htmlFor="room">
+                  {targetRole === "admin" ? "Office Location" : "Room Number"}
+                </Label>
                 <div className="relative">
                   <DoorClosed className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -231,13 +308,14 @@ function AuthPage() {
                     className="pl-9"
                     value={form.roomNumber}
                     onChange={(e) => set("roomNumber")(e.target.value)}
-                    placeholder="B-204"
+                    placeholder={targetRole === "admin" ? "Warden Office 101" : "B-204"}
                     maxLength={20}
                   />
                 </div>
               </div>
+
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Contact Phone</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -253,77 +331,20 @@ function AuthPage() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" size="lg" disabled={loading}>
-            {loading && <Loader2 className="size-4 animate-spin" />}
-            {mode === "login" ? "Sign in" : "Create account"}
+          <Button type="submit" className="w-full mt-2" size="lg" disabled={loading}>
+            {loading && <Loader2 className="size-4 animate-spin mr-2" />}
+            {mode === "login"
+              ? targetRole === "admin"
+                ? "Sign in as Head Warden"
+                : "Sign in as Student"
+              : targetRole === "admin"
+              ? "Register as Head Warden"
+              : "Register as Student"}
           </Button>
         </form>
 
-        {mode === "login" && (
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-primary">Demo Quick Login</span>
-              <span className="text-[11px] text-muted-foreground">Click to fill & sign in</span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs font-medium bg-background/80 hover:bg-background"
-                disabled={loading}
-                onClick={async () => {
-                  setForm((f) => ({ ...f, email: "admin@campus.edu", password: "admin123" }));
-                  setLoading(true);
-                  try {
-                    const { error } = await supabase.auth.signInWithPassword({
-                      email: "admin@campus.edu",
-                      password: "admin123",
-                    });
-                    if (error) throw error;
-                    toast.success("Signed in as Warden (Admin)");
-                    navigate({ to: "/dashboard", replace: true });
-                  } catch (err: any) {
-                    toast.error(err?.message || "Failed to sign in");
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                👑 Chief Warden
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs font-medium bg-background/80 hover:bg-background"
-                disabled={loading}
-                onClick={async () => {
-                  setForm((f) => ({ ...f, email: "student@campus.edu", password: "student123" }));
-                  setLoading(true);
-                  try {
-                    const { error } = await supabase.auth.signInWithPassword({
-                      email: "student@campus.edu",
-                      password: "student123",
-                    });
-                    if (error) throw error;
-                    toast.success("Signed in as Aarav (Student)");
-                    navigate({ to: "/dashboard", replace: true });
-                  } catch (err: any) {
-                    toast.error(err?.message || "Failed to sign in");
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-              >
-                🎓 Student
-              </Button>
-            </div>
-          </div>
-        )}
-
         <p className="mt-5 text-center text-xs text-muted-foreground">
-          Protected by secure token-based authentication and role-based access.
+          Protected by token authentication and role-based access control.
         </p>
       </motion.div>
     </div>

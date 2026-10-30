@@ -97,6 +97,7 @@ async function handleLocalApiRequest(request: Request, pathname: string): Promis
         room_number: body.options?.data?.room_number,
         hostel_block: body.options?.data?.hostel_block,
         phone: body.options?.data?.phone,
+        role: body.options?.data?.role,
       });
       return new Response(JSON.stringify({ data: result, error: null }), {
         status: 200,

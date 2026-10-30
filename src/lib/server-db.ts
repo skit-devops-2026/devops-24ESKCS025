@@ -283,6 +283,7 @@ export function registerUser(input: {
   room_number?: string;
   hostel_block?: string;
   phone?: string;
+  role?: "admin" | "student";
 }) {
   const db = loadDatabase();
   const normalizedEmail = input.email.trim().toLowerCase();
@@ -294,7 +295,9 @@ export function registerUser(input: {
 
   const userId = crypto.randomUUID();
   const role: "admin" | "student" =
-    normalizedEmail.includes("admin") || normalizedEmail.includes("warden") ? "admin" : "student";
+    input.role === "admin" || normalizedEmail.includes("admin") || normalizedEmail.includes("warden")
+      ? "admin"
+      : "student";
 
   const newUser: StoredUser = {
     id: userId,

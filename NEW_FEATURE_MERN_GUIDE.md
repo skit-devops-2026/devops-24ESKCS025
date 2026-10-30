@@ -504,3 +504,10 @@ npm.cmd run build
 
 ### Q10: How do you verify that data persists across application restarts?
 **Answer:** When an asset is created via `POST /api/assets`, Mongoose issues an `insert` command to MongoDB, which commits the BSON document to disk storage. You can stop both the React frontend and Express backend terminals, restart them, and query `GET /api/assets` or open `/inventory` — all previously saved assets, quantities, and notes persist unaltered.
+
+### Q11: How is access control implemented for asset inventory and maintenance records?
+**Answer:** We enforce a Role-Based Access Control (RBAC) policy:
+- **Head Warden (`role: 'admin'`):** Full administrative privileges to create new assets, edit equipment details, restock or issue inventory units, and delete obsolete entries, as well as add, update status, and delete maintenance records.
+- **Resident Students (`role: 'student'`):** Authenticated read-only access to view current inventory levels and hostel maintenance records. Create, edit, restock, issue, and delete controls are automatically hidden and guarded against unauthorized actions.
+- **Unauthenticated Guests:** Prompted with clear call-to-action notices directing them to sign in before taking administrative action.
+
