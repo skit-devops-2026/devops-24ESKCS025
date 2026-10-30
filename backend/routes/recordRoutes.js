@@ -8,10 +8,14 @@ const router = express.Router();
 // Middleware to check database connectivity
 const checkDbConnection = (req, res, next) => {
   if (!isDbConnected()) {
+    const isAtlas = (process.env.MONGODB_URI || "").includes("mongodb+srv://");
+    const message = isAtlas
+      ? "MongoDB Atlas is not connected. Your current IP address is likely not whitelisted. In MongoDB Atlas, go to Network Access -> Add IP Address -> select 'Allow Access from Anywhere' (0.0.0.0/0)."
+      : "MongoDB is not currently connected. Please configure your MONGODB_URI in backend/.env (e.g. MongoDB Atlas cluster string or local mongod service).";
+
     return res.status(503).json({
       success: false,
-      message:
-        "MongoDB is not currently connected. Please configure your MONGODB_URI in backend/.env (e.g. MongoDB Atlas cluster string or local mongod service).",
+      message,
     });
   }
   next();

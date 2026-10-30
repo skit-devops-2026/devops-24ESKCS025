@@ -483,6 +483,29 @@ function InventoryPage() {
         </div>
       )}
 
+      {/* Database Unreachable Alert */}
+      {serverHealth.online && serverHealth.mongodb !== "connected" && (
+        <div className="mb-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="size-5 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-warning">
+                MongoDB Atlas IP Whitelist Required
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The Express backend is running on port 5000, but MongoDB Atlas is rejecting incoming connections. To fix this:
+              </p>
+              <ol className="mt-2 list-decimal list-inside space-y-1 text-xs text-foreground/90">
+                <li>Open <strong>cloud.mongodb.com</strong> and select your cluster</li>
+                <li>Go to <strong>Security &gt; Network Access</strong> in the left menu</li>
+                <li>Click <strong>+ Add IP Address</strong> and select <strong>Allow Access From Anywhere (0.0.0.0/0)</strong></li>
+                <li>Click <strong>Confirm</strong> (takes ~30-60 seconds to activate)</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPI Metric Cards */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <motion.div
